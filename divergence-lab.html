@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Divergence Lab — тест методологии на реальных данных OKX</title>
+<style>
+:root{background:#050607;color:#eee;font-family:Inter,Arial,sans-serif}
+body{margin:0 auto;max-width:820px;background:#050607;min-height:100vh;padding:16px;box-sizing:border-box}
+.panel{background:#0c1013;border:1px solid #1b2227;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 35px #0008}
+h1{font-size:18px;margin:0 0 4px}
+.sub{font-size:12px;color:#777;margin-bottom:16px}
+.field{margin-bottom:10px}
+.field label{display:block;color:#8d979d;font-size:12px;margin-bottom:6px}
+input,select{width:100%;background:#11161a;color:#fff;border:1px solid #273037;border-radius:11px;padding:10px;font-size:14px;box-sizing:border-box}
+input{text-transform:uppercase}
+.row{display:flex;gap:10px}
+.row>.field{flex:1}
+button{background:#161d22;color:#fff;border:1px solid #303a41;border-radius:11px;padding:12px 16px;font-weight:700;cursor:pointer;width:100%;font-size:14px}
+button:disabled{opacity:.5}
+.status{font-size:12px;color:#9ba4a9;margin-top:10px;min-height:16px}
+.ok{color:#35ff68} .warn{color:#ffc52b} .err{color:#ff6464}
+canvas{width:100%;display:block;border-radius:12px;background:#090c0e}
+.legend{display:flex;gap:14px;font-size:11px;color:#9aa7ad;margin-top:8px;flex-wrap:wrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th,td{padding:6px 4px;text-align:right;border-bottom:1px solid #1b2227;color:#cfd6da}
+th:first-child,td:first-child{text-align:left}
+.note{font-size:11px;color:#69747a;line-height:1.5;margin-top:10px}
+.combo{position:relative}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:#11161a;border:1px solid #273037;border-radius:11px;margin-top:4px;max-height:min(50vh,420px);overflow-y:auto;z-index:20;display:none}
+.dropdown.show{display:block}
+.dropdown div{padding:10px;font-size:13px;cursor:pointer;border-bottom:1px solid #1b2227;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dropdown div:last-child{border-bottom:none}
+.dropdown div:hover{background:#1b2227}
+.chartHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.chartHead span{font-size:12px;color:#8d979d}
+.expandBtn{width:auto;padding:6px 12px;font-size:12px}
+.chart-panel.expanded{max-width:100vw;width:100vw;margin-left:calc(50% - 50vw);border-radius:0}
+.bigBanner{position:fixed;top:16px;right:16px;width:150px;background:linear-gradient(160deg,#0d2b16,#0a1f10);border:2px solid #35ff68;border-radius:16px;padding:12px;box-shadow:0 8px 30px #000a,0 0 24px #35ff6833;z-index:50;text-align:center}
+.bigBanner .lbl{font-size:10px;color:#8fe6a8;letter-spacing:.03em;margin-bottom:4px}
+.bigBanner .val{font-size:26px;font-weight:800;color:#35ff68;line-height:1.1}
+.bigBanner .sub{font-size:10px;color:#6b9c79;margin-top:4px}
+@media (max-width: 1100px){.bigBanner{position:static;width:auto;margin:0 0 14px 0}}
+.riskCard{background:#0c1013;border:1px solid #1b2227;border-radius:14px;padding:12px;margin-bottom:10px}
+.riskCard h3{font-size:13px;margin:0 0 8px;color:#eee}
+.riskRow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;font-size:12px}
+.riskRow label{color:#8d979d;flex:1}
+.riskRow input{width:90px;text-transform:none;padding:6px 8px;font-size:12px}
+.riskRow .out{width:90px;text-align:right;font-weight:700;color:#4a9eff}
+.riskRow .mark{color:#69747a;font-size:10px;width:14px;text-align:center}
+.tabBtn{background:#0c1013;color:#8d979d;border:1px solid #1b2227;border-radius:11px;padding:10px;font-weight:700;font-size:13px;cursor:pointer}
+.tabBtnActive{background:#161d22;color:#fff;border-color:#303a41}
+.detailGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.detailCell{background:#0c1013;border:1px solid #1b2227;border-radius:12px;padding:10px;text-align:center}
+.detailCell .lbl{font-size:10px;color:#8d979d;margin-bottom:4px}
+.detailCell .freq{font-size:10px;color:#69747a;margin-top:2px}
+.detailCell .val{font-size:16px;font-weight:800}
+.compoundRow{display:flex;align-items:center;gap:6px;font-size:11px;color:#8d979d;margin-top:6px}
+.compoundRow input{width:auto}
+.favChip{background:#11161a;border:1px solid #273037;border-radius:20px;padding:4px 10px;font-size:11px;color:#cfd6da;cursor:pointer}
+.favChip:hover{border-color:#35ff68}
+.riskCols{display:flex;gap:10px;margin:8px 0}
+.riskCol{flex:1;text-align:center}
+.riskColLabel{font-size:10px;color:#8d979d;margin-bottom:2px}
+.riskColVal{font-size:16px;font-weight:700}
+.riskAns{font-size:12px;color:#4a9eff;font-weight:600;margin-top:2px}
+.riskShared .riskRow{justify-content:center;gap:10px}
+.riskShared .riskRow label{flex:none;width:auto;text-align:right}
+@media (min-width: 1100px){#riskPanel{position:fixed;top:130px;right:16px;width:360px;max-height:calc(100vh - 150px);overflow-y:auto;margin:0;z-index:40}
+  #scanPanel{position:fixed;top:130px;left:16px;width:360px;max-height:calc(100vh - 150px);overflow-y:auto;margin:0;z-index:40}}
+#scanTable tr[data-m]{cursor:pointer}
+#scanTable tr[data-m]:hover{background:#141a1e}
+.scanRowActive{background:#122318 !important;outline:1px solid #35ff68}
+.scanRowInvalid{opacity:.35}
+</style>
+</head>
+<body>
+
+<div style="display:flex;gap:8px;margin-bottom:10px">
+  <button id="tabTerminal" class="tabBtn tabBtnActive" style="flex:1">Терминал</button>
+  <button id="tabDetail" class="tabBtn" style="flex:1">Все пороги</button>
+  <button id="screenshotBtn" title="Скриншот экрана" style="width:44px;flex:none">📸</button>
+</div>
+
+<div id="pageTerminal">
+<div class="panel">
+  <h1>Divergence Lab</h1>
+  <div class="sub">M-пересечение: вход от центра, выход к центру, реальные данные OKX</div>
+  <div class="row">
+    <div class="field">
+      <label>Инструмент A</label>
+      <div class="combo">
+        <input id="instA" value="CL-USDT-SWAP" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <div class="dropdown" id="dropA"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Инструмент B</label>
+      <div class="combo">
+        <input id="instB" value="XAG-USDT-SWAP" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <div class="dropdown" id="dropB"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Таймфрейм</label>
+      <select id="bar">
+        <option value="1m">1 минута</option>
+        <option value="5m">5 минут</option>
+        <option value="15m">15 минут</option>
+        <option value="1H" selected>1 час</option>
+        <option value="4H">4 часа</option>
+      </select>
+    </div>
+    <div class="field"><label>Глубина истории (дней)</label><input id="days" type="number" value="90" min="7" max="365" style="text-transform:none"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Кол-во вершин для среднего (top-K)</label><input id="topK" type="number" value="3" min="1" max="10" style="text-transform:none"></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button id="loadBtn" style="flex:1">Загрузить и посчитать</button>
+    <button id="favBtn" title="В избранное" style="width:48px;flex:none;font-size:18px;padding:0">☆</button>
+  </div>
+  <div id="favList" class="legend" style="flex-wrap:wrap;margin-top:8px"></div>
+  <button id="clearCacheBtn" style="margin-top:8px;background:#0c1013;font-weight:400;font-size:12px;padding:8px">Очистить сохранённый кэш свечей</button>
+  <div class="status" id="status">Список инструментов загружается…</div>
+</div>
+
+<div class="panel chart-panel" id="chartPanel" style="display:none">
+  <div class="chartHead">
+    <span>D_t (log-ratio, %) · линия M · колесо=зум, перетаскивание=панорама</span>
+    <div style="display:flex;gap:6px">
+      <button class="expandBtn" id="resetZoomBtn">Показать всё</button>
+      <button class="expandBtn" id="expandBtn">Развернуть</button>
+    </div>
+  </div>
+  <canvas id="chart" height="280"></canvas>
+  <div class="legend">
+    <span><span class="dot" style="background:#4a9eff"></span>D_t</span>
+    <span><span class="dot" style="background:#ffc52b"></span>M</span>
+    <span><span class="dot" style="background:#e5484d"></span>верхняя вершина</span>
+    <span><span class="dot" style="background:#35ff68"></span>нижняя вершина</span>
+  </div>
+</div>
+
+<div class="bigBanner" id="bigBanner" style="display:none">
+  <div class="lbl">% ДО НУЛЯ (M)</div>
+  <div class="val" id="bannerVal">—</div>
+  <div class="sub" id="bannerSub">—</div>
+</div>
+
+<div class="panel" id="statsPanel" style="display:none">
+  <div id="summary" class="status"></div>
+
+  <div class="row" style="margin-top:14px">
+    <div class="field">
+      <label>Сейчас, % до нуля (M)</label>
+      <div id="tabloNow" style="font-size:18px;font-weight:700;color:#4a9eff">—</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label>Приб. верхних волн, %</label>
+      <div id="tabloPeakProfit" style="font-size:16px;font-weight:700;color:#e5484d">—</div>
+    </div>
+    <div class="field">
+      <label>Общая прибыль, %</label>
+      <div id="tabloTotalProfit" style="font-size:16px;font-weight:700;color:#4a9eff">—</div>
+    </div>
+    <div class="field">
+      <label>Приб. нижних волн, %</label>
+      <div id="tabloTroughProfit" style="font-size:16px;font-weight:700;color:#35ff68">—</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:14px">
+    <div class="field">
+      <label>Верхние волны (макс / сред / мин)</label>
+      <div id="tiersPeak" style="font-size:14px;color:#eee">— / — / —</div>
+    </div>
+    <div class="field">
+      <label>Нижние волны (макс / сред / мин)</label>
+      <div id="tiersTrough" style="font-size:14px;color:#eee">— / — / —</div>
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:14px">
+    <label>Ручная точка слияния M — сближение/отдаление, шаг = 1 строка таблицы слева</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="mMinus" style="width:52px;flex:none">−</button>
+      <div id="mValue" style="flex:1;text-align:center;font-size:14px;color:#eee">—</div>
+      <button id="mPlus" style="width:52px;flex:none">+</button>
+    </div>
+    <button id="mReset" style="margin-top:8px;background:#0c1013;font-weight:400">Сбросить к найденному M*</button>
+    <div id="manualStats" class="status" style="margin-top:8px"></div>
+  </div>
+
+  <button id="exportBtn" style="margin-top:14px">Скачать результат (JSON)</button>
+</div>
+
+<div class="panel" id="scanPanel" style="display:none">
+  <h1 style="font-size:15px">Пространство вариантов сканирования</h1>
+  <div class="sub">51 точка вокруг лучшей M, мелкий шаг. Клик по строке или кнопки ±/− над этим блоком переставляют текущую M — строка подсвечивается.</div>
+  <table id="scanTable"></table>
+</div>
+
+<div class="panel" id="riskPanel" style="display:none">
+  <h1 style="font-size:15px">Риск-калькулятор (кросс-маржа)</h1>
+  <div class="sub">✓ — вводите сами. ? — считает программа. Формула: Сумма сделки = Депозит / (Плечо × Целевая% ликвидации) — потому что в кросс-марже ликвидацию считает весь счёт, а не только сумма сделки. Галочка "сложный процент" — следующая сделка на этом счёте открывается уже с учётом прибыли предыдущей закрытой.</div>
+  <div class="riskRow" style="margin:6px 0 10px;font-size:13px;font-weight:700"><label>Итог по трём уровням за период</label><span class="out" id="riskHistTotal" style="color:#4a9eff">—</span></div>
+  <div id="riskCards"></div>
+  <div class="note">Это упрощённый расчёт (без учёта maintenance margin, funding и комиссий биржи) — для прикидки размера позиции, не точная копия формулы биржи. Комиссию и funding пока не учитываем — отдельно позже.</div>
+</div>
+
+</div>
+
+<div id="pageDetail" style="display:none">
+  <div class="panel">
+    <h1 style="font-size:15px">Все пороги, все волны</h1>
+    <div class="sub">12 точек входа (3+2+1 на счёт × лонг/шорт). Цвет и яркость — по масштабу $-прибыли относительно самой крупной строки. Частота = сколько раз закрылась / сколько ещё не закрылось.</div>
+    <div id="detailGrid" class="detailGrid"></div>
+  </div>
+</div>
+
+<script>
+// ===== ЯДРО — проверено через Node (divergence-core.js / test-divergence-core.js) =====
+
+function computeLogRatioDivergence(closesA, closesB) {
+  const n = Math.min(closesA.length, closesB.length);
+  const d = new Array(n);
+  for (let i = 0; i < n; i++) d[i] = (Math.log(closesA[i]) - Math.log(closesB[i])) * 100;
+  const d0 = d[0];
+  for (let i = 0; i < n; i++) d[i] -= d0; // ноль = начало загруженного окна, чтобы M было интерпретируемо
+  return d;
+}
+
+function rollingStd(values, window) {
+  const n = values.length;
+  const out = new Array(n).fill(NaN);
+  for (let i = window; i < n; i++) {
+    let sum = 0, sumSq = 0;
+    for (let j = i - window; j < i; j++) { sum += values[j]; sumSq += values[j] * values[j]; }
+    const mean = sum / window;
+    out[i] = Math.sqrt(Math.max(0, sumSq / window - mean * mean));
+  }
+  return out;
+}
+
+function median(arr) {
+  const s = [...arr].filter(v => !Number.isNaN(v)).sort((a, b) => a - b);
+  if (!s.length) return NaN;
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+// Волна = отрезок между пересечениями уровня M (см. findWavesByMCrossing ниже).
+// Порог входа теперь не перебирается вручную, а выводится из самих данных:
+// среднее топ-K крупнейших волн своей стороны → min/mid/max пороги. Раздельно
+// для верхних и нижних волн, потому что у пары характер может быть асимметричным.
+
+function topKAverage(amplitudes, k) {
+  const sorted = [...amplitudes].sort((a, b) => b - a);
+  const top = sorted.slice(0, k);
+  return top.length ? top.reduce((s, x) => s + x, 0) / top.length : NaN;
+}
+
+function deriveTiers(topAvg) {
+  const gMin = topAvg / 2;
+  const gMax = topAvg;
+  const gMid = (gMin + gMax) / 2;
+  return { gMin, gMid, gMax };
+}
+
+// Вход причинный: |D-M| впервые достигает своего порога (у пика и впадины он свой).
+// Выход — возврат к M, либо таймаут maxHoldBars (тоже исход, не выброшенный из
+// статистики — так учитывается риск продолжения расхождения).
+function simulateMGAsym(D, M, GpeakEntry, GtroughEntry, maxHoldBars) {
+  const n = D.length;
+  const events = [];
+  const g0 = D[0] - M >= 0 ? GpeakEntry : GtroughEntry;
+  let armed = Math.abs(D[0] - M) < g0;
+  let inTrade = false, entryIdx = -1, entryVal = 0, entrySide = 0;
+
+  for (let t = 1; t < n; t++) {
+    const dist = D[t] - M;
+    const Gnow = dist >= 0 ? GpeakEntry : GtroughEntry;
+    if (!armed) {
+      if (Math.abs(dist) < Gnow) armed = true;
+      continue;
+    }
+    if (!inTrade) {
+      if (Math.abs(dist) >= Gnow) { inTrade = true; entryIdx = t; entryVal = D[t]; entrySide = Math.sign(dist); }
+    } else {
+      const distNow = D[t] - M;
+      const crossedBack = Math.sign(distNow) !== entrySide;
+      const timedOut = (t - entryIdx) >= maxHoldBars;
+      if (crossedBack || timedOut || t === n - 1) {
+        const exitVal = D[t];
+        const entryDist = Math.abs(entryVal - M);
+        const exitDist = Math.abs(exitVal - M);
+        const R = entryDist > 0 ? ((entryDist - exitDist) / entryDist) * 100 : 0;
+        events.push({ entryIdx, exitIdx: t, entryVal, exitVal, R, side: entrySide, timedOut: timedOut && !crossedBack, barsHeld: t - entryIdx });
+        inTrade = false;
+      }
+    }
+  }
+  return events;
+}
+
+// Для кандидата M: волны → среднее топ-K с каждой стороны → пороги → прогон по
+// min-порогу ("минимальная сделка" из вашего описания — волны меньше него не считаются).
+function evaluateM(D, M, topK, maxHoldBars) {
+  const waves = findWavesByMCrossing(D, M);
+  const topAvgPeak = topKAverage(waves.filter(w => w.type === "peak").map(w => w.pct), topK);
+  const topAvgTrough = topKAverage(waves.filter(w => w.type === "trough").map(w => w.pct), topK);
+  if (!(topAvgPeak > 0) || !(topAvgTrough > 0)) return null;
+  const peakTiers = deriveTiers(topAvgPeak);
+  const troughTiers = deriveTiers(topAvgTrough);
+  const events = simulateMGAsym(D, M, peakTiers.gMin, troughTiers.gMin, maxHoldBars);
+  const N = events.length;
+  const profit = events.reduce((s, e) => s + e.R, 0);
+  const avg = N > 0 ? profit / N : NaN;
+  return { M, topAvgPeak, topAvgTrough, peakTiers, troughTiers, N, profit, avg, events };
+}
+
+// Мартингейл-DCA по трём связанным счетам (грид-стратегия): счёт 1 открывается на min-уровне
+// и усредняется на mid/max (2x, 4x от своей базовой суммы); счёт 2 открывается на mid и
+// усредняется на max (2x); счёт 3 открывается только на max. Закрытие — все счета разом при
+// возврате к нулю (M). Если волна не вернулась до конца данных — resolved:false, позиция не
+// закрывается принудительно, а помечается как риск (censoring, не выброшена из статистики).
+function simulateMartingaleSide(D, M, levels, baseAmounts, side) {
+  const n = D.length;
+  const results = [];
+  const dist = t => side > 0 ? D[t] - M : M - D[t];
+  let armed = dist(0) < levels[0];
+  let accounts = null;
+  let openIdx = null;
+
+  const closeAll = (t, resolved) => {
+    accounts.forEach((acc, ai) => {
+      if (acc.entries.length) {
+        const totalAmt = acc.entries.reduce((s, e) => s + e.amount, 0);
+        const weightedEntry = acc.entries.reduce((s, e) => s + e.level * e.amount, 0) / totalAmt;
+        results.push({ account: ai, resolved, entries: acc.entries.slice(), totalAmt, weightedEntry, exitLevel: D[t], side, openIdx, closeIdx: t });
+      }
+    });
+  };
+
+  for (let t = 1; t < n; t++) {
+    const d = dist(t);
+    if (!armed) { if (d < levels[0]) armed = true; continue; }
+    if (!accounts) {
+      if (d >= levels[0]) {
+        openIdx = t;
+        accounts = [
+          { entries: [{ level: D[t], amount: baseAmounts[0], idx: t }], triggered: [true, false, false] },
+          { entries: [], triggered: [false, false, false] },
+          { entries: [], triggered: [false, false, false] },
+        ];
+      }
+      continue;
+    }
+    if (d <= 0) { closeAll(t, true); accounts = null; continue; }
+    if (!accounts[0].triggered[1] && d >= levels[1]) {
+      accounts[0].entries.push({ level: D[t], amount: accounts[0].entries[accounts[0].entries.length - 1].amount * 2, idx: t });
+      accounts[0].triggered[1] = true;
+      accounts[1].entries.push({ level: D[t], amount: baseAmounts[1], idx: t });
+      accounts[1].triggered[0] = true;
+    }
+    if (!accounts[0].triggered[2] && d >= levels[2]) {
+      accounts[0].entries.push({ level: D[t], amount: accounts[0].entries[accounts[0].entries.length - 1].amount * 2, idx: t });
+      accounts[0].triggered[2] = true;
+      accounts[1].entries.push({ level: D[t], amount: accounts[1].entries[accounts[1].entries.length - 1].amount * 2, idx: t });
+      accounts[1].triggered[1] = true;
+      accounts[2].entries.push({ level: D[t], amount: baseAmounts[2], idx: t });
+      accounts[2].triggered[0] = true;
+    }
+  }
+  if (accounts) closeAll(n - 1, false);
+  return results;
+}
+
+function aggregateMartingale(D, M, peakTiers, troughTiers, tradeAmounts) {
+  const peakRes = simulateMartingaleSide(D, M, [peakTiers.gMin, peakTiers.gMid, peakTiers.gMax], tradeAmounts, +1);
+  const troughRes = simulateMartingaleSide(D, M, [troughTiers.gMin, troughTiers.gMid, troughTiers.gMax], tradeAmounts, -1);
+  const all = [...peakRes, ...troughRes];
+  return [0, 1, 2].map(ai => {
+    const mine = all.filter(r => r.account === ai);
+    const resolved = mine.filter(r => r.resolved);
+    const unresolved = mine.filter(r => !r.resolved);
+    return {
+      resolvedN: resolved.length, unresolvedN: unresolved.length,
+      maxExposure: mine.length ? Math.max(...mine.map(r => r.totalAmt)) : 0,
+      resolvedResults: resolved,
+    };
+  });
+}
+
+// Разбивка на 12 точек входа (3+2+1 на сторону × long/short) — прибыль каждой волны
+// распределяется по её входам пропорционально их доле в общей сумме позиции.
+// Проверено вручную: сумма долей строго равна прибыли волны, сумма всех строк = общий итог.
+function computeEntryBreakdown(D, M, peakTiers, troughTiers, tradeAmounts, leverage) {
+  const sides = [
+    { key: "peak", side: +1, tiers: peakTiers, label: "лонг" },
+    { key: "trough", side: -1, tiers: troughTiers, label: "шорт" },
+  ];
+  const rows = [];
+  sides.forEach(s => {
+    const levels = [s.tiers.gMin, s.tiers.gMid, s.tiers.gMax];
+    const res = simulateMartingaleSide(D, M, levels, tradeAmounts, s.side);
+    for (let acc = 0; acc < 3; acc++) {
+      for (let lvl = acc; lvl < 3; lvl++) {
+        const entryIdxInAcc = lvl - acc;
+        let freqResolved = 0, freqUnresolved = 0, dollarProfit = 0;
+        res.filter(r => r.account === acc).forEach(r => {
+          if (r.entries.length <= entryIdxInAcc) return;
+          const e = r.entries[entryIdxInAcc];
+          if (r.resolved) {
+            freqResolved++;
+            const capturedPP = Math.abs(r.weightedEntry - M) - Math.abs(r.exitLevel - M);
+            const instanceProfit = r.totalAmt * leverage[acc] * capturedPP / 100;
+            dollarProfit += instanceProfit * (e.amount / r.totalAmt);
+          } else freqUnresolved++;
+        });
+        rows.push({ account: acc, level: lvl, sideKey: s.key, sideLabel: s.label, freqResolved, freqUnresolved, dollarProfit });
+      }
+    }
+  });
+  return rows;
+}
+
+// Сложный процент на один счёт: капитал общий для лонг- и шорт-сделок этого счёта,
+// поэтому сначала строим структуру (без денег, вес 1/2/4) отдельно для каждой
+// стороны под её пороги, потом сливаем в один хронологический таймлайн и растим
+// капитал по мере закрытия волн — следующая сделка уже от нового капитала.
+function computeCompoundedAccount(D, M, peakTiers, troughTiers, account, initialCapital, leverage, liqTarget) {
+  const peakLevels = [peakTiers.gMin, peakTiers.gMid, peakTiers.gMax];
+  const troughLevels = [troughTiers.gMin, troughTiers.gMid, troughTiers.gMax];
+  const peakStruct = simulateMartingaleSide(D, M, peakLevels, [1, 1, 1], +1).filter(r => r.account === account);
+  const troughStruct = simulateMartingaleSide(D, M, troughLevels, [1, 1, 1], -1).filter(r => r.account === account);
+  const timeline = [...peakStruct, ...troughStruct].sort((a, b) => a.openIdx - b.openIdx);
+
+  let capital = initialCapital;
+  let totalProfit = 0, unresolvedCount = 0, maxExposure = 0;
+  for (const inst of timeline) {
+    const unitBase = capital / (leverage * (liqTarget / 100));
+    const scaledEntries = inst.entries.map(e => ({ ...e, amount: e.amount * unitBase }));
+    const totalAmt = scaledEntries.reduce((s, e) => s + e.amount, 0);
+    maxExposure = Math.max(maxExposure, totalAmt);
+    if (inst.resolved) {
+      const weightedEntry = scaledEntries.reduce((s, e) => s + e.level * e.amount, 0) / totalAmt;
+      const capturedPP = Math.abs(weightedEntry - M) - Math.abs(inst.exitLevel - M);
+      const profit = totalAmt * leverage * capturedPP / 100;
+      capital += profit;
+      totalProfit += profit;
+    } else unresolvedCount++;
+  }
+  return { finalCapital: capital, totalProfit, resolvedN: timeline.length - unresolvedCount, unresolvedN: unresolvedCount, maxExposure };
+}
+
+function sweepMRuleBased(D, Mcandidates, topK, maxHoldBars, minN) {
+  return Mcandidates.map(M => evaluateM(D, M, topK, maxHoldBars)).filter(Boolean)
+    .map(r => ({ ...r, valid: r.N >= minN }));
+}
+
+function bestRuleConfig(results) {
+  const valid = results.filter(r => r.valid);
+  if (!valid.length) return null;
+  return valid.reduce((best, r) => (r.profit > best.profit ? r : best), valid[0]);
+}
+
+// Слой 1: ВСЕ волны между пересечениями M, без фильтра по G — для визуальной проверки глазами
+function findWavesByMCrossing(D, M) {
+  const n = D.length;
+  const waves = [];
+  let segStart = 0;
+  let side = Math.sign(D[0] - M) || 1;
+  let firstSegment = true; // первый сегмент не ограничен настоящим пересечением слева — пропускаем
+  for (let t = 1; t < n; t++) {
+    const s = Math.sign(D[t] - M);
+    if (s !== 0 && s !== side) {
+      if (!firstSegment) {
+        let extIdx = segStart;
+        for (let k = segStart; k < t; k++) {
+          if (side > 0 ? D[k] > D[extIdx] : D[k] < D[extIdx]) extIdx = k;
+        }
+        waves.push({ idx: extIdx, level: D[extIdx], type: side > 0 ? "peak" : "trough", pct: Math.abs(D[extIdx] - M) });
+      }
+      firstSegment = false;
+      segStart = t; side = s;
+    }
+  }
+  return waves;
+}
+
+// ===== OKX FETCH — паттерн из вашего v0.8.0, + кэш в IndexedDB по инструменту+таймфрейму =====
+
+function barMsOf(bar) { return {"1m":60000,"5m":300000,"15m":900000,"1H":3600000,"4H":14400000}[bar]; }
+function barMinutesOf(bar) { return {"1m":1,"5m":5,"15m":15,"1H":60,"4H":240}[bar]; }
+
+async function fetchOkxCandlesRange(instId, bar, fromMs, onProgress) {
+  const barMs = barMsOf(bar);
+  const toMs = Date.now();
+  // лимит страниц раньше был жёстко 300 (=90000 свечей) — на 1m/5m это обрезало
+  // историю раньше запрошенной глубины. Считаем лимит от реально нужного объёма.
+  const neededCandles = Math.max(1, (toMs - fromMs) / barMs);
+  const maxPages = Math.min(3000, Math.ceil(neededCandles / 300) + 5);
+  let cursor = toMs + barMs;
+  const all = [];
+  for (let page = 0; page < maxPages; page++) {
+    const url = "https://www.okx.com/api/v5/market/history-candles?instId=" + encodeURIComponent(instId) +
+                "&bar=" + bar + "&after=" + encodeURIComponent(String(cursor)) + "&limit=300";
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(instId + ": HTTP " + r.status);
+    const j = await r.json();
+    if (j.code !== "0") throw new Error(instId + ": OKX code " + j.code + " " + (j.msg || ""));
+    const rows = (j.data || []).map(x => ({ ts: Number(x[0]), close: Number(x[4]) }));
+    if (!rows.length) break;
+    all.push(...rows);
+    if (onProgress) onProgress(instId, all.length);
+    const earliest = rows[rows.length - 1].ts;
+    if (earliest <= fromMs) break;
+    cursor = earliest;
+    await new Promise(res => setTimeout(res, 150));
+  }
+  return all.filter(x => x.ts >= fromMs && x.ts <= toMs).sort((a, b) => a.ts - b.ts);
+}
+
+function mergeRows(oldRows, newRows) {
+  const map = new Map(oldRows.map(r => [r.ts, r]));
+  newRows.forEach(r => map.set(r.ts, r));
+  return [...map.values()].sort((a, b) => a.ts - b.ts);
+}
+
+// ---- IndexedDB: маленькая локальная база в браузере, переживает перезагрузку страницы.
+// Два раздельных хранилища: "candles" (свечи, чистятся кнопкой "Очистить кэш") и
+// "settings" (риск-настройки, избранное — кнопка очистки кэша их НЕ трогает).
+// Если недоступна (например, редкие ограничения при открытии файла напрямую с диска) —
+// тихо работаем без сохранения.
+const DB_NAME = "divergence_lab_cache", STORE = "candles", SETTINGS_STORE = "settings";
+let dbBroken = false;
+let dbConnPromise = null;
+function dbOpen() {
+  if (dbBroken) return Promise.reject(new Error("indexedDB unavailable"));
+  if (!dbConnPromise) {
+    dbConnPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("indexedDB unavailable"));
+      const req = indexedDB.open(DB_NAME, 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+        if (!db.objectStoreNames.contains(SETTINGS_STORE)) db.createObjectStore(SETTINGS_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    dbConnPromise.catch(() => { dbBroken = true; dbConnPromise = null; });
+  }
+  return dbConnPromise;
+}
+async function dbGetFrom(store, key) {
+  try {
+    const db = await dbOpen();
+    return await new Promise((resolve, reject) => {
+      const req = db.transaction(store, "readonly").objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { dbBroken = true; return null; }
+}
+async function dbSetTo(store, key, value) {
+  try {
+    const db = await dbOpen();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readwrite");
+      tx.objectStore(store).put(value, key);
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) { dbBroken = true; }
+}
+async function dbClearStore(store) {
+  try {
+    const db = await dbOpen();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readwrite");
+      tx.objectStore(store).clear();
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) { /* ignore */ }
+}
+const dbGet = (key) => dbGetFrom(STORE, key);
+const dbSet = (key, value) => dbSetTo(STORE, key, value);
+const dbClear = () => dbClearStore(STORE); // только свечи — настройки/избранное не трогаем
+
+function pairKey(instA, instB) { return instA + "__" + instB; }
+async function loadRiskSettings(instA, instB) { return await dbGetFrom(SETTINGS_STORE, "risk_" + pairKey(instA, instB)); }
+async function saveRiskSettings(instA, instB, cards) {
+  await dbSetTo(SETTINGS_STORE, "risk_" + pairKey(instA, instB), cards.map(c => ({ deposit: c.deposit, leverage: c.leverage, liqTarget: c.liqTarget, compound: !!c.compound })));
+}
+async function getFavorites() { return (await dbGetFrom(SETTINGS_STORE, "favorites")) || []; }
+function findFavorite(favs, instA, instB) { return favs.find(f => pairKey(f.instA, f.instB) === pairKey(instA, instB)) || null; }
+
+function cardsEqual(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  return a.every((c, i) => c.deposit === b[i].deposit && c.leverage === b[i].leverage && c.liqTarget === b[i].liqTarget && !!c.compound === !!b[i].compound);
+}
+
+// Снепшот = M, на котором остановились, и текущие риск-настройки. ☆ нет памяти,
+// ⭐ текущее состояние совпадает со снепшотом, ⏳ после сохранения было изменено вручную.
+async function favStarState() {
+  const favs = await getFavorites();
+  const fav = findFavorite(favs, state.instA, state.instB);
+  if (!fav) return { state: "empty", fav: null };
+  const mMatches = Math.abs(fav.manualM - state.manualM) < 1e-6;
+  const cardsMatch = cardsEqual(fav.riskCards, (state.riskCards || []).map(c => ({ deposit: c.deposit, leverage: c.leverage, liqTarget: c.liqTarget })));
+  return { state: (mMatches && cardsMatch) ? "saved" : "pending", fav };
+}
+
+async function saveFavoriteSnapshot() {
+  const favs = await getFavorites();
+  const key = pairKey(state.instA, state.instB);
+  const snapshot = {
+    instA: state.instA, instB: state.instB, manualM: state.manualM,
+    riskCards: (state.riskCards || []).map(c => ({ deposit: c.deposit, leverage: c.leverage, liqTarget: c.liqTarget, compound: !!c.compound })),
+  };
+  const idx = favs.findIndex(f => pairKey(f.instA, f.instB) === key);
+  if (idx >= 0) favs[idx] = snapshot; else favs.push(snapshot);
+  await dbSetTo(SETTINGS_STORE, "favorites", favs);
+}
+async function removeFavorite(instA, instB) {
+  const favs = await getFavorites();
+  const key = pairKey(instA, instB);
+  await dbSetTo(SETTINGS_STORE, "favorites", favs.filter(f => pairKey(f.instA, f.instB) !== key));
+}
+
+// Загрузка с кэшем: если в IndexedDB уже есть данные по этому инструменту+таймфрейму
+// и они покрывают нужную глубину истории — докачиваем только новые бары с последней
+// сохранённой точки. Иначе — обычная полная загрузка (как раньше).
+async function loadWithCache(instId, bar, days, onProgress) {
+  const key = instId + "_" + bar;
+  const fullFromMs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const cached = await dbGet(key);
+  let rows;
+  if (cached && cached.rows.length && cached.rows[0].ts <= fullFromMs + barMsOf(bar) * 2) {
+    onProgress && onProgress(instId, 0, "кэш: " + cached.rows.length + " баров, докачиваю новые…");
+    const lastTs = cached.rows[cached.rows.length - 1].ts;
+    const newRows = await fetchOkxCandlesRange(instId, bar, lastTs + 1, (id, n) => onProgress && onProgress(id, n, "докачиваю новые бары"));
+    rows = mergeRows(cached.rows, newRows).filter(r => r.ts >= fullFromMs);
+  } else {
+    onProgress && onProgress(instId, 0, "кэша нет или он короче нужного периода — полная загрузка");
+    rows = await fetchOkxCandlesRange(instId, bar, fullFromMs, (id, n) => onProgress && onProgress(id, n, "загружаю"));
+  }
+  await dbSet(key, { rows, updatedAt: Date.now() });
+  return rows;
+}
+
+async function fetchLatestPrice(instId) {
+  const url = "https://www.okx.com/api/v5/market/ticker?instId=" + encodeURIComponent(instId);
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("ticker HTTP " + r.status);
+  const j = await r.json();
+  if (j.code !== "0" || !j.data || !j.data[0]) throw new Error("ticker error " + j.code);
+  return Number(j.data[0].last);
+}
+
+function currentD() { return (state.liveD !== null && state.liveD !== undefined) ? state.liveD : state.D[state.D.length - 1]; }
+
+async function liveTick() {
+  if (!state) return;
+  try {
+    const [a, b] = await Promise.all([fetchLatestPrice(state.instA), fetchLatestPrice(state.instB)]);
+    state.liveD = (Math.log(a) - Math.log(b)) * 100 - state.anchorOffset;
+    const nowDist = state.liveD - state.manualM;
+    document.getElementById("tabloNow").textContent = (nowDist >= 0 ? "+" : "−") + Math.abs(nowDist).toFixed(2) + "%";
+    updateBanner();
+  } catch (e) { /* один неудачный тик — не страшно, попробуем на следующем цикле */ }
+}
+
+let liveInterval = null;
+function startLiveUpdates() {
+  if (liveInterval) clearInterval(liveInterval);
+  liveInterval = setInterval(liveTick, 15000);
+  liveTick();
+}
+
+function alignSeries(seriesA, seriesB) {
+  const mapB = new Map(seriesB.map(x => [x.ts, x.close]));
+  const ts = [], a = [], b = [];
+  for (const pt of seriesA) if (mapB.has(pt.ts)) { ts.push(pt.ts); a.push(pt.close); b.push(mapB.get(pt.ts)); }
+  return { ts, a, b };
+}
+
+// ===== СПИСОК ИНСТРУМЕНТОВ (для поиска + дефолт XAG/CL) =====
+
+let instrumentList = [];
+
+async function loadInstruments() {
+  try {
+    const r = await fetch("https://www.okx.com/api/v5/public/instruments?instType=SWAP", { cache: "no-store" });
+    const j = await r.json();
+    instrumentList = (j.data || []).map(x => x.instId).sort();
+    setStatus(instrumentList.length + " инструментов доступно для поиска", "ok");
+  } catch (e) {
+    setStatus("Не удалось загрузить список инструментов (поиск не сработает, но можно ввести тикер вручную): " + e.message, "warn");
+  }
+  trySelectDefaults();
+}
+
+function trySelectDefaults() {
+  const findBy = (prefix) => instrumentList.find(id => id.startsWith(prefix)) || instrumentList.find(id => id.includes(prefix));
+  const guessA = findBy("CL-");
+  const guessB = findBy("XAG-");
+  if (guessA) document.getElementById("instA").value = guessA;
+  if (guessB) document.getElementById("instB").value = guessB;
+}
+
+function wireCombo(inputId, dropId) {
+  const input = document.getElementById(inputId);
+  const drop = document.getElementById(dropId);
+  const refresh = (browseAll) => {
+    const q = browseAll ? "" : input.value.trim();
+    const matches = q ? instrumentList.filter(id => id.includes(q)).slice(0, 30) : instrumentList.slice(0, 30);
+    drop.innerHTML = matches.map(m => "<div data-v=\"" + m + "\">" + m + "</div>").join("");
+    drop.classList.toggle("show", matches.length > 0 && instrumentList.length > 0);
+  };
+  input.addEventListener("input", () => {
+    const pos = input.selectionStart;
+    const upper = input.value.toUpperCase();
+    if (upper !== input.value) { input.value = upper; input.setSelectionRange(pos, pos); }
+    refresh(false);
+  });
+  input.addEventListener("focus", () => { input.select(); refresh(true); });
+  drop.addEventListener("mousedown", (e) => {
+    const v = e.target.getAttribute("data-v");
+    if (v) { input.value = v; drop.classList.remove("show"); }
+  });
+  document.addEventListener("click", (e) => {
+    if (!input.contains(e.target) && !drop.contains(e.target)) drop.classList.remove("show");
+  });
+}
+
+wireCombo("instA", "dropA");
+wireCombo("instB", "dropB");
+loadInstruments();
+
+document.getElementById("clearCacheBtn").addEventListener("click", async () => {
+  await dbClear();
+  setStatus("Кэш свечей очищен", "ok");
+});
+
+// ===== UI WIRING =====
+
+let state = null;
+
+function setStatus(msg, cls) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status " + (cls || "");
+}
+
+document.getElementById("loadBtn").addEventListener("click", async () => {
+  const instA = document.getElementById("instA").value.trim();
+  const instB = document.getElementById("instB").value.trim();
+  const bar = document.getElementById("bar").value;
+  const days = Number(document.getElementById("days").value);
+  const btn = document.getElementById("loadBtn");
+  btn.disabled = true;
+  try {
+    setStatus("Загружаю " + instA + "...");
+    const histA = await loadWithCache(instA, bar, days, (id, n, msg) => setStatus(id + ": " + msg + (n ? " (" + n + ")" : "")));
+    setStatus("Загружаю " + instB + "...");
+    const histB = await loadWithCache(instB, bar, days, (id, n, msg) => setStatus(id + ": " + msg + (n ? " (" + n + ")" : "")));
+    const { ts, a, b } = alignSeries(histA, histB);
+    if (ts.length < 50) throw new Error("Слишком мало общих точек после выравнивания (" + ts.length + "). Проверьте тикеры.");
+
+    const D = computeLogRatioDivergence(a, b);
+    const anchorOffset = (Math.log(a[0]) - Math.log(b[0])) * 100; // для живого обновления той же шкалы
+    const barsPerDay = Math.round(24 * 60 / barMinutesOf(bar));
+    const stds = rollingStd(D, barsPerDay).filter(v => !Number.isNaN(v));
+    const std = median(stds) || (Math.max(...D) - Math.min(...D)) / 10;
+    const dMedian = median(D);
+    const maxHold = Math.round(48 * 60 / barMinutesOf(bar)); // ~48 часов
+    const topK = Math.max(1, Math.round(Number(document.getElementById("topK").value) || 3));
+
+    // Двухшаговый поиск: сначала грубо (7 точек, широкий охват), затем 51 точка мелким
+    // шагом вокруг грубого лучшего — это и есть таблица "Пространство вариантов сканирования".
+    const coarseM = [-3, -2, -1, 0, 1, 2, 3].map(k => dMedian + k * std);
+    const coarseGrid = sweepMRuleBased(D, coarseM, topK, maxHold, 8);
+    const coarseBest = bestRuleConfig(coarseGrid);
+    if (!coarseBest) throw new Error("Не набралось достаточно волн ни на одном M — попробуйте больше дней истории или меньше top-K.");
+
+    const mStep = std * 0.12;
+    const fineM = Array.from({ length: 51 }, (_, i) => coarseBest.M + (i - 25) * mStep);
+    const grid = sweepMRuleBased(D, fineM, topK, maxHold, 8);
+    const best = bestRuleConfig(grid) || coarseBest;
+
+    state = { ts, D, grid, best, instA, instB, bar, maxHold, topK, mStep, anchorOffset, manualM: best.M, chartMode: "trades", liveD: null };
+    setStatus("Готово: " + ts.length + " баров", "ok");
+    refreshFavUI();
+    render();
+    startLiveUpdates();
+  } catch (e) {
+    setStatus("Ошибка: " + e.message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("expandBtn").addEventListener("click", () => {
+  const panel = document.getElementById("chartPanel");
+  const btn = document.getElementById("expandBtn");
+  const canvas = document.getElementById("chart");
+  const expanding = !panel.classList.contains("expanded");
+  panel.classList.toggle("expanded", expanding);
+  canvas.height = expanding ? 460 : 280;
+  btn.textContent = expanding ? "Свернуть" : "Развернуть";
+  drawChart();
+});
+
+document.getElementById("resetZoomBtn").addEventListener("click", () => {
+  if (!state) return;
+  state.viewStart = 0; state.viewEnd = state.D.length - 1;
+  drawChart();
+});
+
+// ==== TradingView-подобное управление графиком: колесо = зум к курсору, перетаскивание = панорама ====
+(function wireChartNav() {
+  const canvasEl = document.getElementById("chart");
+  let dragState = null;
+
+  canvasEl.style.cursor = "grab";
+  canvasEl.style.touchAction = "none";
+
+  canvasEl.addEventListener("wheel", (e) => {
+    if (!state) return;
+    e.preventDefault();
+    const n = state.D.length;
+    const rect = canvasEl.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const vs = state.viewStart, ve = state.viewEnd;
+    const visibleN = ve - vs + 1;
+    const idxAtMouse = vs + (mouseX / rect.width) * visibleN;
+    const zoomFactor = e.deltaY < 0 ? 0.85 : 1 / 0.85;
+    let newVisibleN = Math.max(10, Math.min(n, visibleN * zoomFactor));
+    let newVs = idxAtMouse - (idxAtMouse - vs) * (newVisibleN / visibleN);
+    let newVe = newVs + newVisibleN - 1;
+    if (newVs < 0) { newVe -= newVs; newVs = 0; }
+    if (newVe > n - 1) { newVs -= (newVe - (n - 1)); newVe = n - 1; }
+    state.viewStart = Math.max(0, newVs); state.viewEnd = Math.min(n - 1, newVe);
+    drawChart();
+  }, { passive: false });
+
+  function panBy(deltaX, rectWidth, base) {
+    const n = state.D.length;
+    const visibleN = base.viewEnd - base.viewStart + 1;
+    const deltaBars = -(deltaX / rectWidth) * visibleN;
+    let newVs = base.viewStart + deltaBars;
+    let newVe = base.viewEnd + deltaBars;
+    if (newVs < 0) { newVe -= newVs; newVs = 0; }
+    if (newVe > n - 1) { newVs -= (newVe - (n - 1)); newVe = n - 1; }
+    state.viewStart = Math.max(0, newVs); state.viewEnd = Math.min(n - 1, newVe);
+  }
+
+  canvasEl.addEventListener("mousedown", (e) => {
+    if (!state) return;
+    dragState = { startX: e.clientX, viewStart: state.viewStart, viewEnd: state.viewEnd };
+    canvasEl.style.cursor = "grabbing";
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!dragState || !state) return;
+    const rect = canvasEl.getBoundingClientRect();
+    panBy(e.clientX - dragState.startX, rect.width, dragState);
+    drawChart();
+  });
+  window.addEventListener("mouseup", () => { dragState = null; canvasEl.style.cursor = "grab"; });
+
+  canvasEl.addEventListener("touchstart", (e) => {
+    if (!state || e.touches.length !== 1) return;
+    dragState = { startX: e.touches[0].clientX, viewStart: state.viewStart, viewEnd: state.viewEnd };
+  }, { passive: true });
+  canvasEl.addEventListener("touchmove", (e) => {
+    if (!dragState || !state || e.touches.length !== 1) return;
+    const rect = canvasEl.getBoundingClientRect();
+    panBy(e.touches[0].clientX - dragState.startX, rect.width, dragState);
+    drawChart();
+  }, { passive: true });
+  canvasEl.addEventListener("touchend", () => { dragState = null; });
+})();
+
+function render() {
+  document.getElementById("chartPanel").style.display = "";
+  document.getElementById("statsPanel").style.display = "";
+  document.getElementById("scanPanel").style.display = "";
+  state.viewStart = 0; state.viewEnd = state.D.length - 1;
+  state.riskCards = null; state.riskCardsRendered = false;
+
+  const b = state.best;
+  document.getElementById("summary").innerHTML =
+    state.instA + " / " + state.instB + " · " + state.ts.length + " баров · top-K=" + state.topK + "<br>" +
+    "Найдено: M*=" + b.M.toFixed(2) + " п.п. (от начала окна) · N=" + b.N + " волн · avg=" +
+    b.avg.toFixed(1) + "% (доля пути обратно к M) · total=" + b.profit.toFixed(0) + "%";
+
+  updateManual();
+}
+
+function renderScanTable() {
+  const sorted = [...state.grid].sort((a, b) => a.M - b.M);
+  let closestIdx = 0;
+  sorted.forEach((g, i) => { if (Math.abs(g.M - state.manualM) < Math.abs(sorted[closestIdx].M - state.manualM)) closestIdx = i; });
+  document.getElementById("scanTable").innerHTML =
+    "<tr><th>M</th><th>N</th><th>avg%</th><th>total%</th></tr>" +
+    sorted.map((g, i) => "<tr class=\"" + (i === closestIdx ? "scanRowActive" : "") + (!g.valid ? " scanRowInvalid" : "") + "\" data-m=\"" + g.M + "\">" +
+      "<td>" + g.M.toFixed(2) + "</td><td>" + g.N + "</td><td>" + g.avg.toFixed(1) + "</td><td>" + g.profit.toFixed(0) + "</td></tr>").join("");
+  document.querySelectorAll("#scanTable tr[data-m]").forEach(row => {
+    row.addEventListener("click", () => { state.manualM = Number(row.dataset.m); updateManual(); });
+  });
+  const activeRow = document.querySelector(".scanRowActive");
+  if (activeRow) activeRow.scrollIntoView({ block: "center" });
+}
+
+async function ensureRiskCards(cfg) {
+  const avg = (a, b) => (a + b) / 2;
+  if (!state.riskCards) {
+    const saved = await loadRiskSettings(state.instA, state.instB);
+    const defaults = [
+      { label: "Минимальный", peak: cfg.peakTiers.gMin, trough: cfg.troughTiers.gMin, deposit: 1000, leverage: 10, liqTarget: Math.round(3 * avg(cfg.peakTiers.gMin, cfg.troughTiers.gMin)), compound: false },
+      { label: "Средний", peak: cfg.peakTiers.gMid, trough: cfg.troughTiers.gMid, deposit: 1000, leverage: 10, liqTarget: Math.round(3 * avg(cfg.peakTiers.gMid, cfg.troughTiers.gMid)), compound: false },
+      { label: "Максимальный", peak: cfg.peakTiers.gMax, trough: cfg.troughTiers.gMax, deposit: 1000, leverage: 10, liqTarget: Math.round(3 * avg(cfg.peakTiers.gMax, cfg.troughTiers.gMax)), compound: false },
+    ];
+    state.riskCards = defaults.map((d, i) => saved && saved[i] ? { ...d, ...saved[i] } : d);
+  } else {
+    state.riskCards[0].peak = cfg.peakTiers.gMin; state.riskCards[0].trough = cfg.troughTiers.gMin;
+    state.riskCards[1].peak = cfg.peakTiers.gMid; state.riskCards[1].trough = cfg.troughTiers.gMid;
+    state.riskCards[2].peak = cfg.peakTiers.gMax; state.riskCards[2].trough = cfg.troughTiers.gMax;
+  }
+}
+
+function recomputeRiskCard(i) {
+  const c = state.riskCards[i];
+  document.getElementById("riskPeak" + i).textContent = c.peak.toFixed(2) + "%";
+  document.getElementById("riskTrough" + i).textContent = c.trough.toFixed(2) + "%";
+  const tradeAmount = c.leverage > 0 && c.liqTarget > 0 ? c.deposit / (c.leverage * (c.liqTarget / 100)) : 0;
+  const remaining = c.deposit - tradeAmount;
+  const amtTxt = "$" + tradeAmount.toFixed(0) + (tradeAmount > c.deposit ? " ⚠️" : "");
+  const remTxt = "$" + remaining.toFixed(0);
+  ["Peak", "Trough"].forEach(side => {
+    document.getElementById("riskAmt" + side + i).textContent = amtTxt;
+    document.getElementById("riskRem" + side + i).textContent = remTxt;
+  });
+  state.riskCards[i].tradeAmount = tradeAmount;
+}
+
+// Три счёта связаны мартингейлом — считаем все разом за один проход, не по отдельности.
+function recomputeAllRiskCards() {
+  state.riskCards.forEach((c, i) => recomputeRiskCard(i));
+  const cfg = state.manual || state.best;
+  const tradeAmounts = state.riskCards.map(c => c.tradeAmount);
+  const perAccount = aggregateMartingale(state.D, cfg.M, cfg.peakTiers, cfg.troughTiers, tradeAmounts);
+
+  let total = 0;
+  perAccount.forEach((acc, i) => {
+    const card = state.riskCards[i];
+    let dollarProfit, resolvedN, unresolvedN, maxExposure;
+    if (card.compound) {
+      const comp = computeCompoundedAccount(state.D, cfg.M, cfg.peakTiers, cfg.troughTiers, i, card.deposit, card.leverage, card.liqTarget);
+      dollarProfit = comp.totalProfit; resolvedN = comp.resolvedN; unresolvedN = comp.unresolvedN; maxExposure = comp.maxExposure;
+    } else {
+      dollarProfit = acc.resolvedResults.reduce((s, r) => {
+        const capturedPP = Math.abs(r.weightedEntry - cfg.M) - Math.abs(r.exitLevel - cfg.M);
+        return s + r.totalAmt * card.leverage * capturedPP / 100;
+      }, 0);
+      resolvedN = acc.resolvedN; unresolvedN = acc.unresolvedN; maxExposure = acc.maxExposure;
+    }
+    total += dollarProfit;
+    state.riskCards[i].histDollar = dollarProfit;
+    document.getElementById("riskHistN" + i).textContent = resolvedN;
+    document.getElementById("riskHistDollar" + i).textContent = (dollarProfit >= 0 ? "+$" : "−$") + Math.abs(dollarProfit).toFixed(0) + (card.compound ? " (сложн.)" : "");
+    const unresEl = document.getElementById("riskHistUnresolved" + i);
+    if (unresEl) unresEl.textContent = unresolvedN > 0 ? "⚠️ " + unresolvedN + " не закрылась (макс. $" + maxExposure.toFixed(0) + " в позиции)" : "все волны закрылись";
+  });
+  const totalEl = document.getElementById("riskHistTotal");
+  if (totalEl) totalEl.textContent = (total >= 0 ? "+$" : "−$") + Math.abs(total).toFixed(0);
+}
+
+async function renderRiskCards() {
+  const cfg = state.manual || state.best;
+  await ensureRiskCards(cfg);
+  document.getElementById("riskPanel").style.display = "";
+  if (!state.riskCardsRendered) {
+    document.getElementById("riskCards").innerHTML = state.riskCards.map((c, i) => `
+      <div class="riskCard">
+        <h3>${c.label} (карточка ${i + 1})</h3>
+        <div class="riskCols">
+          <div class="riskCol"><div class="riskColLabel">Сверху</div><div class="riskColVal" id="riskPeak${i}" style="color:#e5484d"></div></div>
+          <div class="riskCol"><div class="riskColLabel">Снизу</div><div class="riskColVal" id="riskTrough${i}" style="color:#35ff68"></div></div>
+        </div>
+        <div class="riskShared">
+          <div class="riskRow"><span class="mark">✓</span><label>Депозит, $</label><input type="number" id="riskDeposit${i}" value="${c.deposit}" style="text-transform:none"></div>
+          <div class="riskRow"><span class="mark">✓</span><label>Плечо, x</label><input type="number" id="riskLeverage${i}" value="${c.leverage}" style="text-transform:none"></div>
+          <div class="riskRow"><span class="mark">✓</span><label>Ликвидация, %</label><input type="number" id="riskLiq${i}" value="${c.liqTarget}" style="text-transform:none"></div>
+        </div>
+        <div class="riskCols">
+          <div class="riskCol">
+            <div class="riskColLabel">Ответ для волны сверху</div>
+            <div class="riskAns">Сумма = <span id="riskAmtPeak${i}">?</span></div>
+            <div class="riskAns">Маржа = <span id="riskRemPeak${i}">?</span></div>
+          </div>
+          <div class="riskCol">
+            <div class="riskColLabel">Ответ для волны снизу</div>
+            <div class="riskAns">Сумма = <span id="riskAmtTrough${i}">?</span></div>
+            <div class="riskAns">Маржа = <span id="riskRemTrough${i}">?</span></div>
+          </div>
+        </div>
+        <div class="riskRow" style="margin-top:6px;border-top:1px solid #1b2227;padding-top:6px">
+          <span class="mark">?</span><label>Закрытых волн (усреднение мартингейл 1x/2x/4x)</label><span class="out" id="riskHistN${i}">—</span>
+        </div>
+        <div class="riskRow">
+          <span class="mark">?</span><label>$-прибыль на истории за период</label><span class="out" id="riskHistDollar${i}" style="color:#4a9eff">—</span>
+        </div>
+        <div class="note" id="riskHistUnresolved${i}" style="margin-top:4px">—</div>
+        <label class="compoundRow"><input type="checkbox" id="riskCompound${i}"> Сложный процент (след. сделка — с учётом прибыли предыдущей)</label>
+      </div>`).join("");
+    state.riskCards.forEach((c, i) => {
+      [["Deposit", "deposit"], ["Leverage", "leverage"], ["Liq", "liqTarget"]].forEach(([elSuffix, key]) => {
+        document.getElementById("risk" + elSuffix + i).addEventListener("input", (e) => {
+          state.riskCards[i][key] = Number(e.target.value) || 0;
+          recomputeAllRiskCards();
+          saveRiskSettings(state.instA, state.instB, state.riskCards);
+          refreshFavUI();
+        });
+      });
+      document.getElementById("riskCompound" + i).checked = !!c.compound;
+      document.getElementById("riskCompound" + i).addEventListener("change", (e) => {
+        state.riskCards[i].compound = e.target.checked;
+        recomputeAllRiskCards();
+        saveRiskSettings(state.instA, state.instB, state.riskCards);
+        refreshFavUI();
+      });
+    });
+    state.riskCardsRendered = true;
+  }
+  recomputeAllRiskCards();
+}
+
+function updateBanner() {
+  const nowDist = currentD() - state.manualM;
+  document.getElementById("bannerVal").textContent = (nowDist >= 0 ? "+" : "−") + Math.abs(nowDist).toFixed(2) + "%";
+  document.getElementById("bannerSub").textContent = state.instA + " / " + state.instB + (state.liveD !== null ? " · live" : "");
+  document.getElementById("bigBanner").style.display = "";
+}
+
+// ==== Избранное: ☆ нет памяти · ⭐ текущее совпадает со снепшотом · ⏳ изменено после сохранения ====
+async function refreshFavUI() {
+  const favs = await getFavorites();
+  document.getElementById("favList").innerHTML = favs.length
+    ? favs.map(f => `<span class="favChip" data-a="${f.instA}" data-b="${f.instB}">⭐ ${f.instA} / ${f.instB}</span>`).join("")
+    : "";
+  document.querySelectorAll(".favChip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.getElementById("instA").value = chip.dataset.a;
+      document.getElementById("instB").value = chip.dataset.b;
+      document.getElementById("loadBtn").click();
+    });
+  });
+
+  if (!state) {
+    // до загрузки данных ориентируемся просто по текущим полям ввода
+    const instA = document.getElementById("instA").value.trim();
+    const instB = document.getElementById("instB").value.trim();
+    const fav = findFavorite(favs, instA, instB);
+    document.getElementById("favBtn").textContent = fav ? "⭐" : "☆";
+    return;
+  }
+  const { state: favState } = await favStarState();
+  document.getElementById("favBtn").textContent = favState === "saved" ? "⭐" : favState === "pending" ? "⏳" : "☆";
+}
+document.getElementById("favBtn").addEventListener("click", async () => {
+  const instA = document.getElementById("instA").value.trim();
+  const instB = document.getElementById("instB").value.trim();
+  if (!instA || !instB) return;
+
+  if (!state || state.instA !== instA || state.instB !== instB) {
+    // данные для этой пары ещё не загружены в текущей сессии — можно только убрать
+    // существующую запись, сохранять нечего (нет M/риск-настроек для снепшота)
+    const favs = await getFavorites();
+    if (findFavorite(favs, instA, instB)) await removeFavorite(instA, instB);
+    else setStatus("Сначала загрузите эту пару — только тогда можно сохранить её в избранное", "warn");
+    refreshFavUI();
+    return;
+  }
+
+  const { state: favState } = await favStarState();
+  if (favState === "empty") {
+    await saveFavoriteSnapshot();
+  } else if (favState === "pending") {
+    const favs = await getFavorites();
+    const fav = findFavorite(favs, instA, instB);
+    state.manualM = fav.manualM;
+    if (state.riskCards && fav.riskCards) {
+      fav.riskCards.forEach((c, i) => { if (state.riskCards[i]) Object.assign(state.riskCards[i], c); });
+      recomputeAllRiskCards();
+      const inputs = ["Deposit", "deposit", "Leverage", "leverage", "Liq", "liqTarget"];
+      state.riskCards.forEach((c, i) => {
+        document.getElementById("riskDeposit" + i).value = c.deposit;
+        document.getElementById("riskLeverage" + i).value = c.leverage;
+        document.getElementById("riskLiq" + i).value = c.liqTarget;
+        document.getElementById("riskCompound" + i).checked = !!c.compound;
+      });
+    }
+    updateManual();
+  } else {
+    await removeFavorite(instA, instB);
+  }
+  refreshFavUI();
+});
+refreshFavUI();
+function updateManual() {
+  const r = evaluateM(state.D, state.manualM, state.topK, state.maxHold) || { M: state.manualM, N: 0, avg: NaN, profit: NaN, events: [], peakTiers: { gMin: NaN, gMid: NaN, gMax: NaN }, troughTiers: { gMin: NaN, gMid: NaN, gMax: NaN } };
+  state.manual = r;
+
+  document.getElementById("mValue").textContent = state.manualM.toFixed(2) + " п.п.";
+  document.getElementById("manualStats").textContent =
+    "При этой M: N=" + r.N + " волн · avg=" + (r.N ? r.avg.toFixed(1) : "—") + "% · total=" + (r.N ? r.profit.toFixed(0) : "—") + "%";
+  document.getElementById("tiersPeak").textContent =
+    r.peakTiers.gMax.toFixed(2) + "% / " + r.peakTiers.gMid.toFixed(2) + "% / " + r.peakTiers.gMin.toFixed(2) + "%";
+  document.getElementById("tiersTrough").textContent =
+    r.troughTiers.gMax.toFixed(2) + "% / " + r.troughTiers.gMid.toFixed(2) + "% / " + r.troughTiers.gMin.toFixed(2) + "%";
+
+  const nowDist = currentD() - state.manualM;
+  document.getElementById("tabloNow").textContent = (nowDist >= 0 ? "+" : "−") + Math.abs(nowDist).toFixed(2) + "%";
+  const peakProfit = r.events.filter(e => e.side > 0).reduce((s, e) => s + e.R, 0);
+  const troughProfit = r.events.filter(e => e.side < 0).reduce((s, e) => s + e.R, 0);
+  document.getElementById("tabloPeakProfit").textContent = peakProfit.toFixed(0) + "%";
+  document.getElementById("tabloTroughProfit").textContent = troughProfit.toFixed(0) + "%";
+  document.getElementById("tabloTotalProfit").textContent = (peakProfit + troughProfit).toFixed(0) + "%";
+  renderScanTable();
+  renderRiskCards();
+  updateBanner();
+  refreshFavUI();
+  drawChart();
+}
+
+document.getElementById("mMinus").addEventListener("click", () => { state.manualM -= (state.mStep || 0.1); updateManual(); });
+document.getElementById("mPlus").addEventListener("click", () => { state.manualM += (state.mStep || 0.1); updateManual(); });
+document.getElementById("mReset").addEventListener("click", () => { state.manualM = state.best.M; updateManual(); });
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const cfg = state.manual || state.best;
+  const allWaves = findWavesByMCrossing(state.D, state.manualM);
+  const gMinPeak = cfg.peakTiers.gMin, gMinTrough = cfg.troughTiers.gMin;
+  const waves = allWaves.filter(w => w.pct >= (w.type === "peak" ? gMinPeak : gMinTrough));
+  const payload = {
+    instA: state.instA, instB: state.instB, bar: state.bar, barsCount: state.ts.length, topK: state.topK,
+    manualM: state.manualM,
+    bestConfig: { M: state.best.M, N: state.best.N, avg: state.best.avg, profit: state.best.profit, peakTiers: state.best.peakTiers, troughTiers: state.best.troughTiers },
+    currentConfig: { M: cfg.M, N: cfg.N, avg: cfg.avg, profit: cfg.profit, peakTiers: cfg.peakTiers, troughTiers: cfg.troughTiers },
+    topGrid: [...state.grid].filter(g => g.valid).sort((a, b) => b.profit - a.profit).slice(0, 15)
+      .map(g => ({ M: g.M, N: g.N, avg: g.avg, profit: g.profit, peakGMin: g.peakTiers.gMin, troughGMin: g.troughTiers.gMin })),
+    waves: waves.map(w => ({ ts: state.ts[w.idx], type: w.type, level: w.level, pctFromM: w.pct })),
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = state.instA + "_" + state.instB + "_" + state.bar + "_result.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+function minMax(arr) {
+  let mn = Infinity, mx = -Infinity;
+  for (let i = 0; i < arr.length; i++) { if (arr[i] < mn) mn = arr[i]; if (arr[i] > mx) mx = arr[i]; }
+  return [mn, mx];
+}
+
+function drawChart() {
+  const canvas = document.getElementById("chart");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.height;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (!state) return;
+
+  const values = state.D;
+  const n = values.length;
+  if (state.viewStart === undefined) { state.viewStart = 0; state.viewEnd = n - 1; }
+  const vs = Math.max(0, Math.min(n - 2, Math.round(state.viewStart)));
+  const ve = Math.max(vs + 1, Math.min(n - 1, Math.round(state.viewEnd)));
+  const visibleN = ve - vs + 1;
+
+  const cfg = state.manual || state.best;
+  const M = cfg.M;
+  const [visMin, visMax] = minMax(values.slice(vs, ve + 1));
+  const vMin = Math.min(visMin, M), vMax = Math.max(visMax, M);
+  const pad = (vMax - vMin) * 0.1 || 1;
+  const yMin = vMin - pad, yMax = vMax + pad;
+  const X = i => ((i - vs) / (visibleN - 1)) * w;
+  const Y = v => h - ((v - yMin) / (yMax - yMin)) * h;
+
+  ctx.strokeStyle = "#ffc52b"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(0, Y(M)); ctx.lineTo(w, Y(M)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // при сильном отдалении баров больше, чем пикселей — прореживаем линию для скорости отрисовки
+  const step = Math.max(1, Math.floor(visibleN / (w * 2)));
+  ctx.strokeStyle = "#4a9eff"; ctx.lineWidth = 1;
+  ctx.beginPath();
+  let first = true;
+  for (let i = vs; i <= ve; i += step) {
+    if (first) { ctx.moveTo(X(i), Y(values[i])); first = false; } else { ctx.lineTo(X(i), Y(values[i])); }
+  }
+  ctx.stroke();
+
+  const gMinPeak = cfg.peakTiers ? cfg.peakTiers.gMin : 0;
+  const gMinTrough = cfg.troughTiers ? cfg.troughTiers.gMin : 0;
+  const waves = findWavesByMCrossing(values, M)
+    .filter(wv => wv.pct >= (wv.type === "peak" ? gMinPeak : gMinTrough))
+    .filter(wv => wv.idx >= vs && wv.idx <= ve);
+  ctx.font = "9px Inter, Arial, sans-serif";
+  ctx.textAlign = "left";
+  waves.forEach(wv => {
+    const x = X(wv.idx), y = Y(wv.level);
+    ctx.fillStyle = wv.type === "peak" ? "#e5484d" : "#35ff68";
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    const label = (wv.level >= M ? "+" : "−") + wv.pct.toFixed(2);
+    const labelWidth = ctx.measureText(label).width;
+    const labelX = Math.max(2, Math.min(w - labelWidth - 2, x - 12));
+    ctx.fillStyle = "#cfd6da";
+    ctx.fillText(label, labelX, wv.type === "peak" ? Math.max(10, y - 8) : Math.min(h - 4, y + 14));
+  });
+}
+
+// ==== Вкладки страниц ====
+document.getElementById("tabTerminal").addEventListener("click", () => {
+  document.getElementById("pageTerminal").style.display = "";
+  document.getElementById("pageDetail").style.display = "none";
+  document.getElementById("tabTerminal").classList.add("tabBtnActive");
+  document.getElementById("tabDetail").classList.remove("tabBtnActive");
+});
+document.getElementById("tabDetail").addEventListener("click", () => {
+  document.getElementById("pageTerminal").style.display = "none";
+  document.getElementById("pageDetail").style.display = "";
+  document.getElementById("tabDetail").classList.add("tabBtnActive");
+  document.getElementById("tabTerminal").classList.remove("tabBtnActive");
+  renderDetailPage();
+});
+
+// ==== Скриншот экрана (Screen Capture API — спросит разрешение один раз за сессию) ====
+document.getElementById("screenshotBtn").addEventListener("click", async () => {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    await video.play();
+    await new Promise(r => setTimeout(r, 200));
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    stream.getTracks().forEach(t => t.stop());
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "screenshot_" + Date.now() + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+  } catch (e) {
+    setStatus("Скриншот не получился: " + e.message, "warn");
+  }
+});
+
+// ==== Страница "Все пороги" — 12 точек входа, цвет по масштабу ====
+function colorForValue(v, maxAbs) {
+  if (!maxAbs) return "#8d979d";
+  const t = Math.min(1, Math.abs(v) / maxAbs);
+  const lightness = 75 - t * 35; // от блёклого к яркому
+  return v >= 0 ? `hsl(142, 70%, ${lightness}%)` : `hsl(355, 75%, ${lightness}%)`;
+}
+
+function renderDetailPage() {
+  if (!state) { document.getElementById("detailGrid").innerHTML = "<div class='note'>Сначала загрузите пару на вкладке «Терминал».</div>"; return; }
+  const cfg = state.manual || state.best;
+  const tradeAmounts = state.riskCards ? state.riskCards.map(c => c.tradeAmount) : [0, 0, 0];
+  const leverage = state.riskCards ? state.riskCards.map(c => c.leverage) : [1, 1, 1];
+  const rows = computeEntryBreakdown(state.D, cfg.M, cfg.peakTiers, cfg.troughTiers, tradeAmounts, leverage);
+  const maxAbs = Math.max(1, ...rows.map(r => Math.abs(r.dollarProfit)));
+  const arrow = r => r.sideKey === "peak" ? "⤴️" : "⤵️";
+  const dirLabel = r => r.sideKey === "peak" ? "лонг" : "шорт";
+  document.getElementById("detailGrid").innerHTML = rows.map(r => `
+    <div class="detailCell">
+      <div class="lbl">${arrow(r)} Счёт ${r.account + 1} · вход ${r.level + 1} · ${dirLabel(r)}</div>
+      <div class="val" style="color:${colorForValue(r.dollarProfit, maxAbs)}">${r.dollarProfit >= 0 ? "+$" : "−$"}${Math.abs(r.dollarProfit).toFixed(0)}</div>
+      <div class="freq">закрыто ${r.freqResolved}${r.freqUnresolved ? " · ⚠️ не закрыто " + r.freqUnresolved : ""}</div>
+    </div>`).join("");
+}
+</script>
+</body>
+</html>
